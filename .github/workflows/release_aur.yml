@@ -16,12 +16,11 @@ jobs:
       - name: Checkout AUR repository
         uses: actions/checkout@v4
         with:
-          repository: cherry-studio-bin
+          repository: aur.archlinux.org/cherry-studio-bin
           ref: master
           ssh-key: ${{ secrets.AUR_SSH_KEY }}
           ssh-user: aur
           path: aur-repo
-          github-server-url: https://aur.archlinux.org
       - name: Update PKGBUILD or other files
         run: |
           cp -r --exclude='.github' source-repo/* aur-repo/
