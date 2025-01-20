@@ -25,10 +25,10 @@ jobs:
           flags: ''
           srcinfo: true
       - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v7
-      with:
-        commit-message: "chore: bump version to ${{ inputs.pkgver }}"
-        title: "chore: bump version to ${{ inputs.pkgver }}"
-        body: "Update package version to ${{ inputs.pkgver }}"
-        branch: "bump-version-${{ inputs.pkgver }}"
-        delete-branch: true
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: bump version to ${{ inputs.pkgver }}"
+          title: "chore: bump version to ${{ inputs.pkgver }}"
+          body: "Update package version to ${{ inputs.pkgver }}"
+          branch: "bump-version-${{ inputs.pkgver }}"
+          delete-branch: true
