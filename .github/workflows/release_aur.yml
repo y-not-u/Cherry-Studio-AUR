@@ -11,31 +11,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Publish AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
-          path: source-repo
-      - name: Checkout AUR repository
-        uses: actions/checkout@v4
-        with:
-          repository: aur.archlinux.org/cherry-studio-bin
-          ref: master
-          ssh-key: ${{ secrets.AUR_SSH_KEY }}
-          ssh-user: aur
-          path: aur-repo
-          github-server-url: https://aur.archlinux.org
-      - name: Update PKGBUILD or other files
-        run: |
-          cp -r --exclude='.github' source-repo/* aur-repo/
-
-      - name: Validate package
-        uses: heyhusen/archlinux-package-action@v2
-        with:
-          path: aur-repo
-          flags: ""
-          namcap: false
-          srcinfo: true
-      - name: Commit and push to AUR
-        run: |
-          cd aur-repo
-          git add .
-          git commit -m "chore: bump version"
-          git push
+          pkgname: cherry-studio-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,ecdsa,ed25519
