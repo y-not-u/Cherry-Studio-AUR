@@ -1,3 +1,5 @@
+name: Release to AUR
+
 on:
   push:
     branches:
