@@ -2,11 +2,7 @@
 
 pkgname=cherry-studio-bin
 _pkgname=cherry-studio
-<<<<<<< HEAD
 pkgver=0.9.14
-=======
-pkgver=0.9.11
->>>>>>> 5ac3e501d57ad22cb2822637d3da11cdd77445ff
 pkgrel=1
 pkgdesc="🍒 Cherry Studio is a desktop client that supports for multiple LLM providers "
 arch=('x86_64')
