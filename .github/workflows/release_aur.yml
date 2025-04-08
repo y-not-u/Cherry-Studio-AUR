@@ -1,4 +1,4 @@
-name: Release to AUR
+name: Check and update AUR package
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
             echo "Failed to fetch latest version"
             exit 1
           fi
-          VERSION=${VERSION:-"0.0.0"}
+          VERSION=${VERSION#v}
           echo "Latest upstream tag: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Get current version
@@ -40,7 +40,7 @@ jobs:
       - name: Update PKGBUILD version
         uses: heyhusen/archlinux-package-action@v2
         with:
-          pkgver: $VERSION
+          pkgver: ${{ VERSION }}
           pkgrel: 1
           flags: ''
           srcinfo: true
