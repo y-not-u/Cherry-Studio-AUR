@@ -1,16 +1,60 @@
 name: Release to AUR
 
 on:
-  push:
-    branches:
-      - master
+  schedule:
+    - cron: '0 22 * * *'
+  workflow_dispatch:
 
 jobs:
-  build:
+  check_and_update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Get latest upstream version
+        run: |
+          if ! VERSION=$(curl -s https://api.github.com/repos/cherryHQ/cherry-studio/releases/latest | jq -r '.tag_name'); then
+            echo "Failed to fetch latest version"
+            exit 1
+          fi
+          VERSION=${VERSION:-"0.0.0"}
+          echo "Latest upstream tag: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Get current version
+        run: |
+          CURRENT_VERSION=$(cat PKGBUILD | grep 'pkgver=' | cut -d '=' -f 2)
+          CURRENT_VERSION=${CURRENT_VERSION:-"0.0.0"}
+          echo "Current version: $CURRENT_VERSION"
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+      - name: Compare versions and update if needed
+        run: |
+          if [ "$CURRENT_VERSION" = "$VERSION" ]; then
+            echo "Versions are the same, skipping update"
+            exit 0
+          else
+            echo "Version different, proceeding with update"
+          fi
+      - name: Update PKGBUILD version
+        uses: heyhusen/archlinux-package-action@v2
+        with:
+          pkgver: $VERSION
+          pkgrel: 1
+          flags: ''
+          srcinfo: true
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action Bot"
+          git add PKGBUILD .SRCINFO
+          git commit -m "chore: update to $VERSION"
+          git push origin ${{ github.ref_name }}
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
@@ -21,3 +65,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
           commit_message: Update AUR package
           ssh_keyscan_types: rsa,ecdsa,ed25519
+      
