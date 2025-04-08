@@ -40,7 +40,7 @@ jobs:
       - name: Update PKGBUILD version
         uses: heyhusen/archlinux-package-action@v2
         with:
-          pkgver: ${{ VERSION }}
+          pkgver: ${{ env.VERSION }}
           pkgrel: 1
           flags: ''
           srcinfo: true
