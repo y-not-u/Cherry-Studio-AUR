@@ -44,7 +44,7 @@ jobs:
           pkgrel: 1
           flags: ''
           srcinfo: true
-          updpkgsums: true
+          # updpkgsums: true
       - name: Commit changes
         run: |
           if git diff --quiet; then
