@@ -61,6 +61,11 @@ jobs:
         with:
           pkgname: cherry-studio-bin
           pkgbuild: ./PKGBUILD
+          assets: |
+            ./cherry-studio-*.AppImage
+            ./cherry-studio.desktop
+            ./cherry-studio.png
+            ./cherry-studio-bin.sh
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
