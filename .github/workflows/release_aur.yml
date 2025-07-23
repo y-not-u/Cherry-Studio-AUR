@@ -62,7 +62,6 @@ jobs:
           pkgname: cherry-studio-bin
           pkgbuild: ./PKGBUILD
           assets: |
-            ./cherry-studio-*.AppImage
             ./cherry-studio.desktop
             ./cherry-studio.png
             ./cherry-studio-bin.sh
