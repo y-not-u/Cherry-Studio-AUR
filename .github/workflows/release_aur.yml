@@ -53,7 +53,7 @@ jobs:
           fi
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action Bot"
-          git add PKGBUILD .SRCINFO
+          git add --all
           git commit -m "chore: update to $VERSION"
           git push origin ${{ github.ref_name }}
       - name: Publish AUR package
