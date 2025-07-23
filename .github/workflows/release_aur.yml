@@ -57,7 +57,7 @@ jobs:
           git commit -m "chore: update to $VERSION"
           git push origin ${{ github.ref_name }}
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v4
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: cherry-studio-bin
           pkgbuild: ./PKGBUILD
