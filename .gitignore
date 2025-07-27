@@ -13,3 +13,5 @@ pkg/
 src/
 
 *.AppImage
+
+CLAUDE.md
