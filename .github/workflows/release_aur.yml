@@ -68,13 +68,13 @@ jobs:
           echo "Updating PKGBUILD to version: $VERSION"
           
           # Switch to builduser for file operations
-          su - builduser -c "
+          su builduser -c "
             cd '$WORKDIR'
-            
+
             # Update pkgver - use different delimiter to avoid issues with version numbers
             sed -i 's|^pkgver=.*|pkgver=$VERSION|' PKGBUILD
             sed -i 's|^pkgrel=.*|pkgrel=1|' PKGBUILD
-            
+
             # Verify the changes
             echo 'Updated PKGBUILD:'
             grep -E '^(pkgver|pkgrel|pkgname)=' PKGBUILD
@@ -86,15 +86,15 @@ jobs:
           
           # Switch to builduser for makepkg operations
           cd "$WORKDIR"
-          su - builduser -c "
+          su builduser -c "
             cd '$WORKDIR'
-            
+
             # Download the AppImage first
             curl -L -o 'cherry-studio-\$VERSION.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
-            
+
             # Generate checksums using makepkg
             makepkg -g >> PKGBUILD
-            
+
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
           "
@@ -109,13 +109,13 @@ jobs:
           fi
           
           # Commit as builduser with git configuration
-          su - builduser -c "
+          su builduser -c "
             cd '$WORKDIR'
-            
+
             # Configure git for builduser
             git config --global user.email 'action@github.com'
             git config --global user.name 'GitHub Action Bot'
-            
+
             # Add and commit changes
             git add --all
             git commit -m 'chore: update to $VERSION'
