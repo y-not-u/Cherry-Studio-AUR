@@ -27,6 +27,17 @@ jobs:
           pkgrel: ${{ inputs.pkgrel }}
           flags: ''
           srcinfo: true
+          updpkgsums: true
+      - name: Verify checksums
+        run: |
+          echo "Verifying that all checksums have been calculated (no SKIP values)"
+          if grep -q "'SKIP'" PKGBUILD; then
+            echo "Warning: Some checksums are still set to 'SKIP'"
+            grep "'SKIP'" PKGBUILD
+            echo "Please update these checksums manually before merging the PR"
+          else
+            echo "All checksums have been calculated successfully"
+          fi
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:

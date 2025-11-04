@@ -14,6 +14,7 @@ source=("${_pkgname}-${pkgver}.AppImage::${url}/releases/download/v${pkgver}/Che
   "${_pkgname}.desktop"
   "${_pkgname}.png"
   "${pkgname}.sh")
+noextract=("${_pkgname}-${pkgver}.AppImage")
 sha256sums=('SKIP'
   'SKIP'
   'SKIP'

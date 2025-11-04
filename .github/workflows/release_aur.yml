@@ -52,7 +52,7 @@ jobs:
           pkgrel: 1
           flags: ''
           srcinfo: true
-          # updpkgsums: true
+          updpkgsums: true
       - name: Commit changes
         run: |
           if git diff --quiet; then
@@ -64,6 +64,16 @@ jobs:
           git add --all
           git commit -m "chore: update to $VERSION"
           git push origin ${{ github.ref_name }}
+      - name: Verify checksums
+        run: |
+          echo "Verifying that all checksums have been calculated (no SKIP values)"
+          if grep -q "'SKIP'" PKGBUILD; then
+            echo "Error: Some checksums are still set to 'SKIP'"
+            grep "'SKIP'" PKGBUILD
+            exit 1
+          else
+            echo "All checksums have been calculated successfully"
+          fi
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
@@ -78,4 +88,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
           commit_message: Update AUR package
           ssh_keyscan_types: rsa,ecdsa,ed25519
-      
+
