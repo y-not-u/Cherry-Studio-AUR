@@ -15,84 +15,38 @@ on:
 jobs:
   bump_version:
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
     permissions:
       contents: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare environment for checksums
+      - name: Install dependencies
         run: |
-          # Ensure local files exist for checksum calculation
-          ls -la
-          echo "Checking local files..."
-          for file in "${_pkgname}.desktop" "${_pkgname}.png" "${pkgname}.sh"; do
-            if [ -f "$file" ]; then
-              echo "✓ $file exists"
-            else
-              echo "✗ $file not found"
-            fi
-          done
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel jq git
       - name: Update PKGBUILD version
         uses: heyhusen/archlinux-package-action@v2
         with:
           pkgver: ${{ inputs.pkgver }}
           pkgrel: ${{ inputs.pkgrel }}
           flags: ''
-          srcinfo: true
+          srcinfo: false
           updpkgsums: false
-      - name: Calculate checksums manually
+      - name: Calculate checksums and generate .SRCINFO
         run: |
           # Download the AppImage first
           curl -L -o "cherry-studio-${{ inputs.pkgver }}.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ inputs.pkgver }}/Cherry-Studio-${{ inputs.pkgver }}-x86_64.AppImage"
-          
-          # Calculate checksums for local files
-          CHECKSUMS=()
-          
-          # AppImage checksum
-          APPIMAGE_CHECKSUM=$(sha256sum "cherry-studio-${{ inputs.pkgver }}.AppImage" | cut -d' ' -f1)
-          CHECKSUMS+=("'$APPIMAGE_CHECKSUM'")
-          echo "AppImage checksum: $APPIMAGE_CHECKSUM"
-          
-          # Desktop file checksum
-          DESKTOP_CHECKSUM=$(sha256sum "cherry-studio.desktop" | cut -d' ' -f1)
-          CHECKSUMS+=("'$DESKTOP_CHECKSUM'")
-          echo "Desktop file checksum: $DESKTOP_CHECKSUM"
-          
-          # PNG file checksum
-          PNG_CHECKSUM=$(sha256sum "cherry-studio.png" | cut -d' ' -f1)
-          CHECKSUMS+=("'$PNG_CHECKSUM'")
-          echo "PNG file checksum: $PNG_CHECKSUM"
-          
-          # Shell script checksum
-          SH_CHECKSUM=$(sha256sum "cherry-studio-bin.sh" | cut -d' ' -f1)
-          CHECKSUMS+=("'$SH_CHECKSUM'")
-          echo "Shell script checksum: $SH_CHECKSUM"
-          
-          # Update PKGBUILD with new checksums
-          sed -i "s/sha256sums=('SKIP'/sha256sums=('${APPIMAGE_CHECKSUM}'/" PKGBUILD
-          sed -i "s/'SKIP'  # desktop file/'${DESKTOP_CHECKSUM}'  # desktop file/" PKGBUILD
-          sed -i "s/'SKIP'  # png file/'${PNG_CHECKSUM}'  # png file/" PKGBUILD
-          sed -i "s/'SKIP')  # shell script/'${SH_CHECKSUM}')  # shell script/" PKGBUILD
-          
-          # Show updated checksums
-          echo "Updated checksums:"
-          grep -A 4 "sha256sums=" PKGBUILD
-          
-          # Generate .SRCINFO
+
+          # Generate checksums using makepkg
+          makepkg -g >> PKGBUILD
+
+          # Generate .SRCINFO using makepkg
           makepkg --printsrcinfo > .SRCINFO
-          
+
           # Add to git
           git add PKGBUILD .SRCINFO
-      - name: Verify checksums
-        run: |
-          echo "Verifying that all checksums have been calculated (no SKIP values)"
-          if grep -q "'SKIP'" PKGBUILD; then
-            echo "Error: Some checksums are still set to 'SKIP'"
-            grep "'SKIP'" PKGBUILD
-            exit 1
-          else
-            echo "All checksums have been calculated successfully"
-          fi
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:

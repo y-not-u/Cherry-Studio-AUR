@@ -8,12 +8,18 @@ on:
 jobs:
   check_and_update:
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
     permissions:
       contents: write
       pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel jq git
       - name: Get latest upstream version
         run: |
           VERSION=$(curl -s https://api.github.com/repos/cherryHQ/cherry-studio/releases/latest | jq -r '.tag_name')
@@ -51,47 +57,17 @@ jobs:
           pkgver: ${{ env.VERSION }}
           pkgrel: 1
           flags: ''
-          srcinfo: true
+          srcinfo: false
           updpkgsums: false
-      - name: Calculate checksums manually
+      - name: Calculate checksums and generate .SRCINFO
         run: |
           # Download the AppImage first
           curl -L -o "cherry-studio-${{ env.VERSION }}.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ env.VERSION }}/Cherry-Studio-${{ env.VERSION }}-x86_64.AppImage"
-          
-          # Calculate checksums for local files
-          CHECKSUMS=()
-          
-          # AppImage checksum
-          APPIMAGE_CHECKSUM=$(sha256sum "cherry-studio-${{ env.VERSION }}.AppImage" | cut -d' ' -f1)
-          CHECKSUMS+=("'$APPIMAGE_CHECKSUM'")
-          echo "AppImage checksum: $APPIMAGE_CHECKSUM"
-          
-          # Desktop file checksum
-          DESKTOP_CHECKSUM=$(sha256sum "cherry-studio.desktop" | cut -d' ' -f1)
-          CHECKSUMS+=("'$DESKTOP_CHECKSUM'")
-          echo "Desktop file checksum: $DESKTOP_CHECKSUM"
-          
-          # PNG file checksum
-          PNG_CHECKSUM=$(sha256sum "cherry-studio.png" | cut -d' ' -f1)
-          CHECKSUMS+=("'$PNG_CHECKSUM'")
-          echo "PNG file checksum: $PNG_CHECKSUM"
-          
-          # Shell script checksum
-          SH_CHECKSUM=$(sha256sum "cherry-studio-bin.sh" | cut -d' ' -f1)
-          CHECKSUMS+=("'$SH_CHECKSUM'")
-          echo "Shell script checksum: $SH_CHECKSUM"
-          
-          # Update PKGBUILD with new checksums
-          sed -i "s/sha256sums=('SKIP'/sha256sums=('${APPIMAGE_CHECKSUM}'/" PKGBUILD
-          sed -i "s/'SKIP'  # desktop file/'${DESKTOP_CHECKSUM}'  # desktop file/" PKGBUILD
-          sed -i "s/'SKIP'  # png file/'${PNG_CHECKSUM}'  # png file/" PKGBUILD
-          sed -i "s/'SKIP')  # shell script/'${SH_CHECKSUM}')  # shell script/" PKGBUILD
-          
-          # Show updated checksums
-          echo "Updated checksums:"
-          grep -A 4 "sha256sums=" PKGBUILD
-          
-          # Generate .SRCINFO
+
+          # Generate checksums using makepkg
+          makepkg -g >> PKGBUILD
+
+          # Generate .SRCINFO using makepkg
           makepkg --printsrcinfo > .SRCINFO
       - name: Commit changes
         run: |
@@ -104,16 +80,6 @@ jobs:
           git add --all
           git commit -m "chore: update to ${{ env.VERSION }}"
           git push origin ${{ github.ref_name }}
-      - name: Verify checksums
-        run: |
-          echo "Verifying that all checksums have been calculated (no SKIP values)"
-          if grep -q "'SKIP'" PKGBUILD; then
-            echo "Error: Some checksums are still set to 'SKIP'"
-            grep "'SKIP'" PKGBUILD
-            exit 1
-          else
-            echo "All checksums have been calculated successfully"
-          fi
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
