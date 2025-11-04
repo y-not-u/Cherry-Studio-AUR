@@ -52,13 +52,11 @@ jobs:
             exit 1
           fi
       - name: Update PKGBUILD version
-        uses: heyhusen/archlinux-package-action@v2
-        with:
-          pkgver: ${{ env.VERSION }}
-          pkgrel: 1
-          flags: ''
-          srcinfo: false
-          updpkgsums: false
+        run: |
+          # Update pkgver in PKGBUILD
+          sed -i "s/^pkgver=.*/pkgver=${{ env.VERSION }}/" PKGBUILD
+          # Update pkgrel if needed
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
       - name: Calculate checksums and generate .SRCINFO
         run: |
           # Download the AppImage first
@@ -94,4 +92,3 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
           commit_message: Update AUR package
           ssh_keyscan_types: rsa,ecdsa,ed25519
-
