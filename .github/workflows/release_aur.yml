@@ -98,29 +98,13 @@ jobs:
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
           "
-      - name: Commit changes (as builduser)
-        run: |
-          cd "$WORKDIR"
-          
-          # Check if there are changes first
-          if git diff --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          
-          # Commit as builduser with git configuration
-          su builduser -c "
-            cd '$WORKDIR'
-
-            # Configure git for builduser
-            git config --global user.email 'action@github.com'
-            git config --global user.name 'GitHub Action Bot'
-
-            # Add and commit changes
-            git add --all
-            git commit -m 'chore: update to $VERSION'
-            git push origin \$(git branch --show-current)
-          "
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: update to ${{ env.VERSION }}"
+          add: "*"
+          push: true
+          default_author: github_actions
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
