@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install dependencies
         run: |
           pacman -Syu --noconfirm
@@ -25,11 +27,11 @@ jobs:
           useradd -m builduser
           # Get current working directory
           WORKDIR=$(pwd)
-          echo "WORKDIR=$WORKDIR" >> $GITHUB_ENV
 
-          # Give builduser access to files (excluding .git)
-          find "$WORKDIR" -path "$WORKDIR/.git" -prune -o -exec chown builduser:builduser {} +
-          # Ensure builduser can read all directories
+          # Give builduser access to files but preserve .git ownership
+          chown -R builduser:builduser "$WORKDIR"
+          # Restore .git ownership to root for git operations
+          # Ensure builduser can read .git directory
           chmod -R g+rwX "$WORKDIR"
       - name: Get latest upstream version
         run: |
@@ -98,8 +100,10 @@ jobs:
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
           "
-      - name: Configure git for commit
+      - name: Restore git permissions for commit
         run: |
+          # Ensure git repository is accessible
+          chown -R root:root "$WORKDIR/.git"
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
