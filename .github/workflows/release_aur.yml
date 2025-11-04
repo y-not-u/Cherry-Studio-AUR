@@ -20,13 +20,17 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           pacman -S --noconfirm base-devel jq git
-      - name: Create build user
+      - name: Create build user and setup permissions
         run: |
           useradd -m builduser
           # Get current working directory
           WORKDIR=$(pwd)
           echo "WORKDIR=$WORKDIR" >> $GITHUB_ENV
+          
+          # Give builduser access to all files including .git
           chown -R builduser:builduser "$WORKDIR"
+          # Ensure builduser can read .git directory
+          chmod -R g+rwX "$WORKDIR"
       - name: Get latest upstream version
         run: |
           VERSION=$(curl -s https://api.github.com/repos/cherryHQ/cherry-studio/releases/latest | jq -r '.tag_name')
@@ -94,18 +98,29 @@ jobs:
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
           "
-      - name: Commit changes
+      - name: Commit changes (as builduser)
         run: |
           cd "$WORKDIR"
+          
+          # Check if there are changes first
           if git diff --quiet; then
             echo "No changes to commit"
             exit 0
           fi
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action Bot"
-          git add --all
-          git commit -m "chore: update to ${{ env.VERSION }}"
-          git push origin ${{ github.ref_name }}
+          
+          # Commit as builduser with git configuration
+          su - builduser -c "
+            cd '$WORKDIR'
+            
+            # Configure git for builduser
+            git config --global user.email 'action@github.com'
+            git config --global user.name 'GitHub Action Bot'
+            
+            # Add and commit changes
+            git add --all
+            git commit -m 'chore: update to $VERSION'
+            git push origin \$(git branch --show-current)
+          "
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
