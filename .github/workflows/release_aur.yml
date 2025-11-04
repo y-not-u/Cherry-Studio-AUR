@@ -58,15 +58,24 @@ jobs:
             echo "Error: Upstream version is empty or 'null'. Cannot proceed with update."
             exit 1
           fi
-      - name: Update PKGBUILD version
+      - name: Update PKGBUILD version (as builduser)
         run: |
-          # Update pkgver in PKGBUILD
-          sed -i "s/^pkgver=.*/pkgver=${{ env.VERSION }}/" PKGBUILD
-          # Update pkgrel if needed
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          cd "$WORKDIR"
+          echo "Updating PKGBUILD to version: $VERSION"
+          
+          # Switch to builduser for file operations
+          su - builduser -c "
+            cd '$WORKDIR'
+            
+            # Update pkgver - use different delimiter to avoid issues with version numbers
+            sed -i 's|^pkgver=.*|pkgver=$VERSION|' PKGBUILD
+            sed -i 's|^pkgrel=.*|pkgrel=1|' PKGBUILD
+            
+            # Verify the changes
+            echo 'Updated PKGBUILD:'
+            grep -E '^(pkgver|pkgrel|pkgname)=' PKGBUILD
+          "
       - name: Calculate checksums and generate .SRCINFO (as builduser)
-        env:
-          WORKDIR: ${{ env.WORKDIR }}
         run: |
           # Ensure builduser owns the files
           chown -R builduser:builduser "$WORKDIR"
@@ -74,8 +83,10 @@ jobs:
           # Switch to builduser for makepkg operations
           cd "$WORKDIR"
           su - builduser -c "
+            cd '$WORKDIR'
+            
             # Download the AppImage first
-            curl -L -o 'cherry-studio-${{ env.VERSION }}.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v${{ env.VERSION }}/Cherry-Studio-${{ env.VERSION }}-x86_64.AppImage'
+            curl -L -o 'cherry-studio-\$VERSION.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
             
             # Generate checksums using makepkg
             makepkg -g >> PKGBUILD
@@ -84,8 +95,6 @@ jobs:
             makepkg --printsrcinfo > .SRCINFO
           "
       - name: Commit changes
-        env:
-          WORKDIR: ${{ env.WORKDIR }}
         run: |
           cd "$WORKDIR"
           if git diff --quiet; then
