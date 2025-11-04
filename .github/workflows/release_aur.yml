@@ -20,6 +20,10 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           pacman -S --noconfirm base-devel jq git
+      - name: Create build user
+        run: |
+          useradd -m builduser
+          chown -R builduser:builduser /github/workspace
       - name: Get latest upstream version
         run: |
           VERSION=$(curl -s https://api.github.com/repos/cherryHQ/cherry-studio/releases/latest | jq -r '.tag_name')
@@ -57,16 +61,21 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=${{ env.VERSION }}/" PKGBUILD
           # Update pkgrel if needed
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
-      - name: Calculate checksums and generate .SRCINFO
+      - name: Calculate checksums and generate .SRCINFO (as builduser)
         run: |
-          # Download the AppImage first
-          curl -L -o "cherry-studio-${{ env.VERSION }}.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ env.VERSION }}/Cherry-Studio-${{ env.VERSION }}-x86_64.AppImage"
-
-          # Generate checksums using makepkg
-          makepkg -g >> PKGBUILD
-
-          # Generate .SRCINFO using makepkg
-          makepkg --printsrcinfo > .SRCINFO
+          # Switch to builduser for makepkg operations
+          chown -R builduser:builduser /github/workspace
+          cd /github/workspace
+          su - builduser -c "
+            # Download the AppImage first
+            curl -L -o 'cherry-studio-${{ env.VERSION }}.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v${{ env.VERSION }}/Cherry-Studio-${{ env.VERSION }}-x86_64.AppImage'
+            
+            # Generate checksums using makepkg
+            makepkg -g >> PKGBUILD
+            
+            # Generate .SRCINFO using makepkg
+            makepkg --printsrcinfo > .SRCINFO
+          "
       - name: Commit changes
         run: |
           if git diff --quiet; then
