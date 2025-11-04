@@ -27,7 +27,6 @@ jobs:
           useradd -m builduser
           # Get current working directory
           WORKDIR=$(pwd)
-          echo "WORKDIR=$WORKDIR" >> $GITHUB_ENV
 
           # Give builduser access to files but preserve .git ownership
           chown -R builduser:builduser "$WORKDIR"
