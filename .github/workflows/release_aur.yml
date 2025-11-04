@@ -52,7 +52,47 @@ jobs:
           pkgrel: 1
           flags: ''
           srcinfo: true
-          updpkgsums: true
+          updpkgsums: false
+      - name: Calculate checksums manually
+        run: |
+          # Download the AppImage first
+          curl -L -o "cherry-studio-${{ env.VERSION }}.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ env.VERSION }}/Cherry-Studio-${{ env.VERSION }}-x86_64.AppImage"
+          
+          # Calculate checksums for local files
+          CHECKSUMS=()
+          
+          # AppImage checksum
+          APPIMAGE_CHECKSUM=$(sha256sum "cherry-studio-${{ env.VERSION }}.AppImage" | cut -d' ' -f1)
+          CHECKSUMS+=("'$APPIMAGE_CHECKSUM'")
+          echo "AppImage checksum: $APPIMAGE_CHECKSUM"
+          
+          # Desktop file checksum
+          DESKTOP_CHECKSUM=$(sha256sum "cherry-studio.desktop" | cut -d' ' -f1)
+          CHECKSUMS+=("'$DESKTOP_CHECKSUM'")
+          echo "Desktop file checksum: $DESKTOP_CHECKSUM"
+          
+          # PNG file checksum
+          PNG_CHECKSUM=$(sha256sum "cherry-studio.png" | cut -d' ' -f1)
+          CHECKSUMS+=("'$PNG_CHECKSUM'")
+          echo "PNG file checksum: $PNG_CHECKSUM"
+          
+          # Shell script checksum
+          SH_CHECKSUM=$(sha256sum "cherry-studio-bin.sh" | cut -d' ' -f1)
+          CHECKSUMS+=("'$SH_CHECKSUM'")
+          echo "Shell script checksum: $SH_CHECKSUM"
+          
+          # Update PKGBUILD with new checksums
+          sed -i "s/sha256sums=('SKIP'/sha256sums=('${APPIMAGE_CHECKSUM}'/" PKGBUILD
+          sed -i "s/'SKIP'  # desktop file/'${DESKTOP_CHECKSUM}'  # desktop file/" PKGBUILD
+          sed -i "s/'SKIP'  # png file/'${PNG_CHECKSUM}'  # png file/" PKGBUILD
+          sed -i "s/'SKIP')  # shell script/'${SH_CHECKSUM}')  # shell script/" PKGBUILD
+          
+          # Show updated checksums
+          echo "Updated checksums:"
+          grep -A 4 "sha256sums=" PKGBUILD
+          
+          # Generate .SRCINFO
+          makepkg --printsrcinfo > .SRCINFO
       - name: Commit changes
         run: |
           if git diff --quiet; then
@@ -62,7 +102,7 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action Bot"
           git add --all
-          git commit -m "chore: update to $VERSION"
+          git commit -m "chore: update to ${{ env.VERSION }}"
           git push origin ${{ github.ref_name }}
       - name: Verify checksums
         run: |

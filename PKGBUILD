@@ -15,10 +15,10 @@ source=("${_pkgname}-${pkgver}.AppImage::${url}/releases/download/v${pkgver}/Che
   "${_pkgname}.png"
   "${pkgname}.sh")
 noextract=("${_pkgname}-${pkgver}.AppImage")
-sha256sums=('SKIP'
-  'SKIP'
-  'SKIP'
-  'SKIP')
+sha256sums=('SKIP'  # AppImage
+  'SKIP'  # desktop file
+  'SKIP'  # png file
+  'SKIP')  # shell script
 conflicts=("$_pkgname")
 
 package() {
