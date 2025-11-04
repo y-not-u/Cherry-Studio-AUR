@@ -102,8 +102,6 @@ jobs:
           "
       - name: Restore git permissions for commit
         run: |
-          # Ensure git repository is accessible
-          chown -R root:root "$WORKDIR/.git"
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
