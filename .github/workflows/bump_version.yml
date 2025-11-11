@@ -39,8 +39,12 @@ jobs:
           # Download the AppImage first
           curl -L -o "cherry-studio-${{ inputs.pkgver }}.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ inputs.pkgver }}/Cherry-Studio-${{ inputs.pkgver }}-x86_64.AppImage"
 
-          # Generate checksums using makepkg
-          makepkg -g >> PKGBUILD
+          # Generate checksums using makepkg and replace existing sha256sums
+          makepkg -g > /tmp/checksums.txt
+          # Read the generated checksums
+          checksums=$(cat /tmp/checksums.txt)
+          # Use sed to replace the existing sha256sums line in PKGBUILD
+          sed -i "/^sha256sums=/,/^)/c\\${checksums}" PKGBUILD
 
           # Generate .SRCINFO using makepkg
           makepkg --printsrcinfo > .SRCINFO
