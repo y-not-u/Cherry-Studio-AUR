@@ -95,21 +95,10 @@ jobs:
             curl -L -o 'cherry-studio-\$VERSION.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
 
             # Remove existing sha256sums before generating new ones
-            # Use consistent delimiter | for all sed commands
-            sed -i '|^sha256sums=|,/^)|d' PKGBUILD
+            sed -i '/^sha256sums=/,/^)/d' PKGBUILD
 
-            # Generate checksums using makepkg -g and capture output
-            checksums=$(makepkg -g 2>/dev/null)
-
-            # Check if checksums were generated successfully
-            if [ -z "$checksums" ]; then
-              echo "Error: makepkg -g failed to generate checksums"
-              exit 1
-            fi
-
-            # Insert the checksums after noextract line with precise anchor
-            # Use the exact noextract line as anchor point
-            sed -i '|^noextract=(\"\${_pkgname}-\${pkgver}\.AppImage\")|a \\n'"$checksums" PKGBUILD
+            # Generate checksums using makepkg
+            makepkg -g >> PKGBUILD
 
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
