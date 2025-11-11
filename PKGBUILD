@@ -19,22 +19,3 @@ sha256sums=('9c46679de366f0e1bef04cd75a18c879db70c0a2c8982c0adc69a0f4496e9568'
             'fd0b11ca782c9c0de6dbf34143b7f14560b4a7020e316c58e9a5e1115551c7ee'
             '597463003798254ab97505e2374485e55262152483f717f3169da3444de60f94'
             '6aed5e7ca95679b2545540241dc9e6b055da1dfde696006a1712f90cfbfaec92')
-conflicts=("$_pkgname")
-
-package() {
-  cd "$srcdir"
-
-  # Create directories
-  install -dm755 "$pkgdir/usr/bin/$pkgname"
-  install -dm755 "$pkgdir/usr/share/applications"
-  install -dm755 "$pkgdir/usr/share/icons/hicolor/256x256/apps"
-
-  # Install AppImage
-  install -Dm755 "${_pkgname}-${pkgver}.AppImage" "${pkgdir}/opt/${pkgname}/${_pkgname}.AppImage"
-  # Install icon
-  install -Dm644 "$_pkgname.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/$_pkgname.png"
-  # Install desktop file
-  install -Dm644 "$_pkgname.desktop" "$pkgdir/usr/share/applications/$_pkgname.desktop"
-  # Install cherry-studio-bin.sh
-  install -m755 "${pkgname}.sh" "${pkgdir}/usr/bin/${_pkgname}"
-}
