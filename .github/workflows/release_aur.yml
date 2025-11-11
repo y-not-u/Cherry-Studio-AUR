@@ -85,7 +85,7 @@ jobs:
         run: |
           # Ensure builduser owns the files
           chown -R builduser:builduser "$WORKDIR"
-          
+
           # Switch to builduser for makepkg operations
           cd "$WORKDIR"
           su builduser -c "
@@ -93,6 +93,9 @@ jobs:
 
             # Download the AppImage first
             curl -L -o 'cherry-studio-\$VERSION.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
+
+            # Remove existing sha256sums before generating new ones
+            sed -i '/^sha256sums=/,/^)/d' PKGBUILD
 
             # Generate checksums using makepkg
             makepkg -g >> PKGBUILD
