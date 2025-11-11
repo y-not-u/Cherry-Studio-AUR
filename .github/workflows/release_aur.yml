@@ -68,7 +68,7 @@ jobs:
         run: |
           cd "$WORKDIR"
           echo "Updating PKGBUILD to version: $VERSION"
-          
+
           # Switch to builduser for file operations
           su builduser -c "
             cd '$WORKDIR'
@@ -95,13 +95,15 @@ jobs:
             curl -L -o 'cherry-studio-\$VERSION.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
 
             # Remove existing sha256sums before generating new ones
-            sed -i '/^sha256sums=/,/^)/d' PKGBUILD
+            # Use consistent delimiter | for all sed commands
+            sed -i '|^sha256sums=|,/^)|d' PKGBUILD
 
             # Generate checksums using makepkg -g and capture output
             checksums=$(makepkg -g)
 
-            # Insert the checksums after noextract line using proper sed syntax
-            sed -i '/^noextract=/a \\n'"$checksums" PKGBUILD
+            # Insert the checksums after noextract line with precise anchor
+            # Use the exact noextract line as anchor point
+            sed -i '|^noextract=(\"\${_pkgname}-\${pkgver}\.AppImage\")|a \\n'"$checksums" PKGBUILD
 
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
