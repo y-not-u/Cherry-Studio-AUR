@@ -24,14 +24,14 @@ jobs:
           fetch-depth: 0
       - name: Create build user and setup permissions
         run: |
-          useradd -m builduser
+          # Create build user with explicit group
+          useradd -m -U builduser
           # Get current working directory
           WORKDIR=$(pwd)
           echo "WORKDIR=$WORKDIR" >> $GITHUB_ENV
-          # Give builduser access to files but preserve .git ownership
+          # Give builduser access to files
           chown -R builduser:builduser "$WORKDIR"
-          # Restore .git ownership to root for git operations
-          # Ensure builduser can read .git directory
+          # Ensure builduser can read all files
           chmod -R g+rwX "$WORKDIR"
       - name: Get latest upstream version
         run: |
