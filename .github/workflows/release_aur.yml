@@ -100,6 +100,11 @@ jobs:
             # Generate checksums using makepkg
             makepkg -g >> PKGBUILD
 
+            # Move sha256sums to the correct position (after noextract)
+            sed -i '/^noextract=/a\
+sha256sums=(' PKGBUILD
+            sed -i '/^sha256sums=(/,/^)/{/^sha256sums=(/d; /^)/d}' PKGBUILD
+
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
           "
