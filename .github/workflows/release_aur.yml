@@ -91,14 +91,23 @@ jobs:
           su builduser -c "
             cd '$WORKDIR'
 
-            # Download the AppImage first
-            curl -L -o 'cherry-studio-\$VERSION.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
-
-            # Remove existing sha256sums before generating new ones
-            sed -i '/^sha256sums=/,/^)/d' PKGBUILD
-
-            # Generate checksums using makepkg
-            makepkg -g >> PKGBUILD
+            # Download AppImages for both architectures
+            curl -L -o 'cherry-studio-\$VERSION-x86_64.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
+            curl -L -o 'cherry-studio-\$VERSION-arm64.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-arm64.AppImage'
+            
+            # Calculate checksums
+            x86_checksum=\$(sha256sum 'cherry-studio-\$VERSION-x86_64.AppImage' | awk '{print \$1}')
+            arm64_checksum=\$(sha256sum 'cherry-studio-\$VERSION-arm64.AppImage' | awk '{print \$1}')
+            
+            # Update architecture-specific checksums in PKGBUILD
+            sed -i \"/^case \\\\\"\\\$CARCH\\\\\" in/,/^esac\$/ {
+              /x86_64)/ {
+                s/_sha256sum=.*/_sha256sum='\$x86_checksum'/
+              }
+              /aarch64)/ {
+                s/_sha256sum=.*/_sha256sum='\$arm64_checksum'/
+              }
+            }\" PKGBUILD
 
             # Generate .SRCINFO using makepkg
             makepkg --printsrcinfo > .SRCINFO
