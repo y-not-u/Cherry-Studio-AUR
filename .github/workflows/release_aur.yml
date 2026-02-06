@@ -2,7 +2,7 @@ name: Check and update AUR package
 
 on:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 10,22 * * *'
   workflow_dispatch:
 
 jobs:
