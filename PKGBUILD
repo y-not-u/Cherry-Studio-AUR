@@ -45,7 +45,7 @@ package() {
 }
 case "$CARCH" in
   x86_64)
-    _sha256sum='f41dda369021b51296b3ab11db795bcf9dd24841aed039eef4fc8dd37eafe88d'
+    _sha256sum='06693b07339d376941ee82106294564d16b5b89fd9104026729afef60a2b0fa8'
     ;;
   aarch64)
     _sha256sum='e141a788319330f15c8660e0a7ed56980487777f2f361c3fe93ed9fd846da0'

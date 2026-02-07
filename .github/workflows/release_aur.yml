@@ -83,33 +83,32 @@ jobs:
           "
       - name: Calculate checksums and generate .SRCINFO (as builduser)
         run: |
-          # Ensure builduser owns the files
           chown -R builduser:builduser "$WORKDIR"
-
-          # Switch to builduser for makepkg operations
           cd "$WORKDIR"
           su builduser -c "
-            cd '$WORKDIR'
+            set -euo pipefail
 
             # Download AppImages for both architectures
-            curl -L -o 'cherry-studio-\$VERSION-x86_64.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-x86_64.AppImage'
-            curl -L -o 'cherry-studio-\$VERSION-arm64.AppImage' 'https://github.com/cherryHQ/cherry-studio/releases/download/v\$VERSION/Cherry-Studio-\$VERSION-arm64.AppImage'
-            
-            # Calculate checksums
-            x86_checksum=\$(sha256sum 'cherry-studio-\$VERSION-x86_64.AppImage' | awk '{print \$1}')
-            arm64_checksum=\$(sha256sum 'cherry-studio-\$VERSION-arm64.AppImage' | awk '{print \$1}')
-            
-            # Update architecture-specific checksums in PKGBUILD
-            sed -i \"/^case \\\\\"\\\$CARCH\\\\\" in/,/^esac\$/ {
+            curl -fL -o \"cherry-studio-${VERSION}-x86_64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-x86_64.AppImage\"
+            curl -fL -o \"cherry-studio-${VERSION}-arm64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-arm64.AppImage\"
+
+            # Compute checksums
+            x86_checksum=\$(sha256sum \"cherry-studio-${VERSION}-x86_64.AppImage\" | awk '{print \$1}')
+            arm64_checksum=\$(sha256sum \"cherry-studio-${VERSION}-arm64.AppImage\" | awk '{print \$1}')
+
+            # Update checksums in PKGBUILD
+            sed -i \"/^case \\\"\\\$CARCH\\\" in/,/^esac\$/ {
               /x86_64)/ {
+                n
                 s/_sha256sum=.*/_sha256sum='\$x86_checksum'/
               }
               /aarch64)/ {
+                n
                 s/_sha256sum=.*/_sha256sum='\$arm64_checksum'/
               }
             }\" PKGBUILD
 
-            # Generate .SRCINFO using makepkg
+            # Generate .SRCINFO
             makepkg --printsrcinfo > .SRCINFO
           "
       - name: Configure git safe directory
