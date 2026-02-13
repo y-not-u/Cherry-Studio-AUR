@@ -13,6 +13,41 @@ An AUR package for [Cherry Studio](https://github.com/cherryHQ/cherry-studio) - 
 - User-configurable flags via `~/.config/cherry-studio-flags.conf`
 - Desktop integration with application menu entry
 
+## Table of Contents
+
+- [Project Structure](#project-structure)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Development](#development)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Project Structure
+
+```
+.
+├── .github/
+│   └── workflows/
+│       ├── release_aur.yml     # Auto-update workflow
+│       └── bump_version.yml    # Manual version bump
+├── LICENSE                     # Project license (AGPL-3.0)
+├── CHANGELOG.md                # Version history
+├── CONTRIBUTING.md             # Contribution guidelines
+├── PKGBUILD                    # Package build script
+├── README.md                   # This file
+├── .SRCINFO                    # AUR package info
+├── .gitignore                  # Git ignore rules
+├── cherry-studio-bin.sh        # Wrapper script
+├── cherry-studio.desktop       # Desktop entry
+├── cherry-studio.png           # Application icon
+├── scripts/
+│   └── build_package.sh        # Build automation script
+└── tests/
+    └── test_pkgbuild.sh        # Package validation tests
+```
+
 ## System Requirements
 
 - **Arch Linux** or Arch-based distribution
@@ -44,7 +79,74 @@ cd cherry-studio-bin
 makepkg -si
 ```
 
-## Build and Test Commands
+## Usage
+
+### Running Cherry Studio
+
+After installation, you can run Cherry Studio from the terminal or application menu:
+
+```bash
+cherry-studio
+```
+
+### Configuration
+
+Cherry Studio supports custom command-line flags through a configuration file:
+
+1. Create the config file:
+```bash
+mkdir -p ~/.config
+touch ~/.config/cherry-studio-flags.conf
+```
+
+2. Add your flags (one per line, comments with `#`):
+```bash
+# ~/.config/cherry-studio-flags.conf
+# Example: Disable hardware acceleration
+--disable-gpu
+
+# Example: Enable debug logging
+--enable-logging
+--v=1
+```
+
+3. Launch Cherry Studio normally - your flags will be applied automatically.
+
+## Development
+
+### Build Commands
+
+This project includes a build automation script:
+
+```bash
+# Build the package
+./scripts/build_package.sh build
+
+# Build and install
+./scripts/build_package.sh build-install
+
+# Clean build artifacts
+./scripts/build_package.sh clean
+
+# Run tests
+./scripts/build_package.sh test
+
+# Auto-update to latest version
+./scripts/build_package.sh update
+
+# Bump version manually
+./scripts/build_package.sh bump-version 1.8.0 1
+```
+
+### Testing
+
+Run the package validation tests:
+
+```bash
+./tests/test_pkgbuild.sh
+```
+
+### Package Validation
 
 ```bash
 # Build the package only
@@ -71,29 +173,6 @@ namcap *.pkg.tar.zst
 - **Wrapper script**: `/usr/bin/cherry-studio`
 - **Desktop file**: `/usr/share/applications/cherry-studio.desktop`
 - **Icon**: `/usr/share/icons/hicolor/256x256/apps/cherry-studio.png`
-
-## Configuration
-
-Cherry Studio supports custom command-line flags through a configuration file:
-
-1. Create the config file:
-```bash
-mkdir -p ~/.config
-touch ~/.config/cherry-studio-flags.conf
-```
-
-2. Add your flags (one per line, comments with `#`):
-```bash
-# ~/.config/cherry-studio-flags.conf
-# Example: Disable hardware acceleration
---disable-gpu
-
-# Example: Enable debug logging
---enable-logging
---v=1
-```
-
-3. Launch Cherry Studio normally - your flags will be applied automatically.
 
 ## Supported Architectures
 
@@ -127,15 +206,11 @@ makepkg --printsrcinfo > .SRCINFO
 
 ## Contributing
 
-Found a bug or have a suggestion? Please:
-
-1. Check existing [AUR issues](https://aur.archlinux.org/packages/cherry-studio-bin)
-2. Open a new issue with detailed information
-3. Submit PKGBUILD improvements via AUR requests
+We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details.
 
 ## License
 
-- **Package**: MIT (see [LICENSE](LICENSE) if available)
+- **Package**: AGPL-3.0 (see [LICENSE](LICENSE))
 - **Cherry Studio**: [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html)
 
 ## Acknowledgments
@@ -143,6 +218,13 @@ Found a bug or have a suggestion? Please:
 - [Cherry Studio](https://github.com/cherryHQ/cherry-studio) - Original application
 - Arch Linux AUR community
 - All contributors and testers
+
+## Automated Workflows
+
+This project uses GitHub Actions for:
+- **Scheduled updates**: Checks for new Cherry Studio releases twice daily
+- **Version bumping**: Automated version updates when new releases are found
+- **AUR publishing**: Automatic deployment to AUR when changes are committed
 
 ---
 
