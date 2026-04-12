@@ -122,36 +122,16 @@ jobs:
           push: true
           default_author: github_actions
       - name: Publish AUR package
-        env:
-          AUR_USERNAME: ${{ secrets.AUR_USERNAME }}
-          AUR_EMAIL: ${{ secrets.AUR_EMAIL }}
-          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
-        run: |
-          install -dm700 ~/.ssh
-          printf '%s\n' "$AUR_SSH_KEY" > ~/.ssh/aur
-          chmod 600 ~/.ssh/aur
-          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
-
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes"
-
-          rm -rf aur-repo
-          git clone "ssh://aur@aur.archlinux.org/cherry-studio-bin.git" aur-repo
-
-          install -m 644 PKGBUILD aur-repo/PKGBUILD
-          install -m 644 .SRCINFO aur-repo/.SRCINFO
-          install -m 644 cherry-studio.desktop aur-repo/cherry-studio.desktop
-          install -m 644 cherry-studio.png aur-repo/cherry-studio.png
-          install -m 755 cherry-studio-bin.sh aur-repo/cherry-studio-bin.sh
-
-          cd aur-repo
-          git config user.name "$AUR_USERNAME"
-          git config user.email "$AUR_EMAIL"
-          git add PKGBUILD .SRCINFO cherry-studio.desktop cherry-studio.png cherry-studio-bin.sh
-
-          if git diff --cached --quiet; then
-            echo "No AUR changes to publish"
-            exit 0
-          fi
-
-          git commit -m "Update AUR package"
-          git push
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
+        with:
+          pkgname: cherry-studio-bin
+          pkgbuild: ./PKGBUILD
+          assets: |
+            ./cherry-studio.desktop
+            ./cherry-studio.png
+            ./cherry-studio-bin.sh
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,ecdsa,ed25519
