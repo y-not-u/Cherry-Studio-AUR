@@ -25,7 +25,21 @@ jobs:
       - name: Install dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm base-devel jq git
+          pacman -S --noconfirm base-devel jq git curl
+      - name: Validate upstream release assets
+        run: |
+          set -euo pipefail
+
+          version="${{ inputs.pkgver }}"
+          release_json="$(curl -fsSL "https://api.github.com/repos/cherryHQ/cherry-studio/releases/tags/v${version}")"
+
+          for arch in x86_64 arm64; do
+            asset_name="Cherry-Studio-${version}-${arch}.AppImage"
+            if ! jq -e --arg name "$asset_name" 'any(.assets[]?; .name == $name)' <<< "$release_json" >/dev/null; then
+              echo "Error: missing upstream asset: $asset_name"
+              exit 1
+            fi
+          done
       - name: Update PKGBUILD version
         uses: heyhusen/archlinux-package-action@v2
         with:

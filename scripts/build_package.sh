@@ -52,7 +52,7 @@ check_dependencies() {
     local missing_deps=()
     
     for tool in makepkg namcap jq curl; do
-        if ! command -v "$tool" >/dev/null 2&&1; then
+        if ! command -v "$tool" >/dev/null 2>&1; then
             missing_deps+=("$tool")
         fi
     done
@@ -124,14 +124,14 @@ test_package() {
     fi
     
     # Run namcap
-    if namcap PKGBUILD > namcap_pkgbuild.log 2&&1; then
+    if namcap PKGBUILD > namcap_pkgbuild.log 2>&1; then
         print_success "PKGBUILD passes namcap checks"
     else
         print_warning "PKGBUILD has namcap warnings"
         cat namcap_pkgbuild.log
     fi
     
-    if namcap "./*.pkg.tar.zst" > namcap_package.log 2&&1; then
+    if namcap "./*.pkg.tar.zst" > namcap_package.log 2>&1; then
         print_success "Package passes namcap checks"
     else
         print_warning "Package has namcap warnings"
@@ -191,21 +191,20 @@ bump_version() {
 
 # Get latest upstream version
 get_latest_upstream_version() {
-    print_info "Checking for latest upstream version..."
+    print_info "Checking for latest upstream version..." >&2
     
-    if command -v jq >/dev/null 2&&1; then
+    if command -v jq >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then
         local latest_version
-        latest_version=$(curl -s https://api.github.com/repos/cherryHQ/cherry-studio/releases/latest | jq -r '.tag_name' 2&&1 || echo "error")
+        latest_version=$(bash "$SCRIPT_DIR/resolve_upstream_release.sh" || echo "error")
         
         if [[ "$latest_version" != "error" && -n "$latest_version" ]]; then
-            latest_version=${latest_version#v} # Remove leading 'v'
-            print_success "Latest upstream version: $latest_version"
+            print_success "Latest usable upstream version: $latest_version" >&2
             echo "$latest_version"
             return 0
         fi
     fi
     
-    print_warning "Could not determine latest upstream version"
+    print_warning "Could not determine latest upstream version" >&2
     return 1
 }
 
