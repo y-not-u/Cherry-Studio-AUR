@@ -27,11 +27,16 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S --noconfirm base-devel jq git curl
       - name: Validate upstream release assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
           version="${{ inputs.pkgver }}"
-          release_json="$(curl -fsSL "https://api.github.com/repos/cherryHQ/cherry-studio/releases/tags/v${version}")"
+          release_json="$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/cherryHQ/cherry-studio/releases/tags/v${version}")"
 
           for arch in x86_64 arm64; do
             asset_name="Cherry-Studio-${version}-${arch}.AppImage"
@@ -61,7 +66,7 @@ jobs:
           arm64_checksum=$(sha256sum "cherry-studio-${{ inputs.pkgver }}-arm64.AppImage" | awk '{print $1}')
 
           # Update architecture-specific checksums in PKGBUILD
-          sed -i "/^case \"\$CARCH\" in/,/^esac$/ {
+          sed -i "/^# Architecture-specific SHA256 checksums$/,/^sha256sums=/ {
             /x86_64)/ {
               n
               s/_sha256sum=.*/_sha256sum='$x86_checksum'/

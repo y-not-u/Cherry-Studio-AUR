@@ -34,6 +34,8 @@ jobs:
           # Ensure builduser can read all files
           chmod -R g+rwX "$WORKDIR"
       - name: Get latest upstream version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(bash scripts/resolve_upstream_release.sh)
           if [ -z "$VERSION" ]; then
@@ -99,8 +101,10 @@ jobs:
             x86_checksum=\$(sha256sum \"cherry-studio-${VERSION}-x86_64.AppImage\" | awk '{print \$1}')
             arm64_checksum=\$(sha256sum \"cherry-studio-${VERSION}-arm64.AppImage\" | awk '{print \$1}')
 
-            # Update checksums in PKGBUILD
-            sed -i \"/^case \\\"\\\$CARCH\\\" in/,/^esac\$/ {
+            # Update checksums in the checksum-specific case block. The first
+            # case block in PKGBUILD selects the AppImage architecture, so do
+            # not use CARCH as the range start here.
+            sed -i \"/^# Architecture-specific SHA256 checksums$/,/^sha256sums=/ {
               /x86_64)/ {
                 n
                 s/_sha256sum=.*/_sha256sum='\$x86_checksum'/
@@ -110,6 +114,13 @@ jobs:
                 s/_sha256sum=.*/_sha256sum='\$arm64_checksum'/
               }
             }\" PKGBUILD
+
+            # Fail here instead of letting the AUR publish action discover a
+            # stale checksum later.
+            actual_x86_checksum=\$(sha256sum \"cherry-studio-${VERSION}-x86_64.AppImage\" | awk '{print \$1}')
+            actual_arm64_checksum=\$(sha256sum \"cherry-studio-${VERSION}-arm64.AppImage\" | awk '{print \$1}')
+            test \"\$actual_x86_checksum\" = \"\$x86_checksum\"
+            test \"\$actual_arm64_checksum\" = \"\$arm64_checksum\"
 
             # Generate .SRCINFO
             makepkg --printsrcinfo > .SRCINFO
@@ -141,3 +152,4 @@ jobs:
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
           commit_message: Update AUR package
           ssh_keyscan_types: rsa,ecdsa,ed25519
+          test: true
