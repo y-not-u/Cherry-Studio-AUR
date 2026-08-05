@@ -47,12 +47,23 @@ jobs:
       - name: Get current version
         run: |
           CURRENT_VERSION=$(grep -oP '^pkgver=\K.*' PKGBUILD)
+          CURRENT_PKGREL=$(grep -oP '^pkgrel=\K.*' PKGBUILD)
           if [ -z "$CURRENT_VERSION" ]; then
             echo "Warning: pkgver not found in PKGBUILD. Defaulting to 0.0.0."
             CURRENT_VERSION="0.0.0"
           fi
           echo "Current version: $CURRENT_VERSION"
+          echo "Current pkgrel: $CURRENT_PKGREL"
           echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+          echo "CURRENT_PKGREL=$CURRENT_PKGREL" >> $GITHUB_ENV
+      - name: Get published AUR version
+        run: |
+          AUR_VERSION=$(curl -fsSL \
+            --retry 3 \
+            "https://aur.archlinux.org/rpc/v5/info/cherry-studio-bin" \
+            | jq -r '.results[0].Version // empty')
+          echo "Published AUR version: ${AUR_VERSION:-not found}"
+          echo "AUR_VERSION=$AUR_VERSION" >> $GITHUB_ENV
       - name: Compare versions and update if needed
         run: |
           if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
@@ -61,11 +72,21 @@ jobs:
           fi
 
           if [ "$CURRENT_VERSION" = "$VERSION" ]; then
-            echo "Versions are the same ($CURRENT_VERSION), skipping update"
+            echo "Repository already has version $CURRENT_VERSION"
             echo "SHOULD_UPDATE=false" >> $GITHUB_ENV
+
+            EXPECTED_AUR_VERSION="${CURRENT_VERSION}-${CURRENT_PKGREL}"
+            if [ "$AUR_VERSION" = "$EXPECTED_AUR_VERSION" ]; then
+              echo "AUR is already up to date ($AUR_VERSION), skipping publish"
+              echo "SHOULD_PUBLISH=false" >> $GITHUB_ENV
+            else
+              echo "AUR is behind (published: ${AUR_VERSION:-not found}, expected: $EXPECTED_AUR_VERSION), publishing"
+              echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
+            fi
           else
             echo "Version different (upstream: $VERSION, current: $CURRENT_VERSION), proceeding with update"
             echo "SHOULD_UPDATE=true" >> $GITHUB_ENV
+            echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
           fi
       - name: Update PKGBUILD version (as builduser)
         if: env.SHOULD_UPDATE == 'true'
@@ -138,7 +159,7 @@ jobs:
           push: true
           default_author: github_actions
       - name: Publish AUR package
-        if: env.SHOULD_UPDATE == 'true'
+        if: env.SHOULD_PUBLISH == 'true'
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
           pkgname: cherry-studio-bin
