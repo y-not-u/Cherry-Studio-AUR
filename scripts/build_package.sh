@@ -179,6 +179,27 @@ bump_version() {
     # Update PKGBUILD
     sed -i "s/^pkgver=.*/pkgver=$new_version/" PKGBUILD
     sed -i "s/^pkgrel=.*/pkgrel=$new_release/" PKGBUILD
+
+    # Detect AppImage naming convention and update architecture mappings
+    local x86_arch="linux-x64"
+    if ! curl -fsIL "https://github.com/cherryHQ/cherry-studio/releases/download/v${new_version}/Cherry-Studio-${new_version}-${x86_arch}.AppImage" >/dev/null 2>&1; then
+        x86_arch="x86_64"
+    fi
+    local arm_arch="linux-arm64"
+    if ! curl -fsIL "https://github.com/cherryHQ/cherry-studio/releases/download/v${new_version}/Cherry-Studio-${new_version}-${arm_arch}.AppImage" >/dev/null 2>&1; then
+        arm_arch="arm64"
+    fi
+
+    sed -i "/^# Determine architecture-specific values$/,/^esac/ {
+      /x86_64)/ {
+        n
+        s/_appimage_arch=.*/_appimage_arch='$x86_arch'/
+      }
+      /aarch64)/ {
+        n
+        s/_appimage_arch=.*/_appimage_arch='$arm_arch'/
+      }
+    }" PKGBUILD
     
     # Update checksums
     update_checksums

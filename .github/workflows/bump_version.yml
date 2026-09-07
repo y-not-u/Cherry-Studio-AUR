@@ -39,9 +39,10 @@ jobs:
             "https://api.github.com/repos/cherryHQ/cherry-studio/releases/tags/v${version}")"
 
           for arch in x86_64 arm64; do
-            asset_name="Cherry-Studio-${version}-${arch}.AppImage"
-            if ! jq -e --arg name "$asset_name" 'any(.assets[]?; .name == $name)' <<< "$release_json" >/dev/null; then
-              echo "Error: missing upstream asset: $asset_name"
+            if ! jq -e --arg v "$version" --arg a "$arch" '
+              any(.assets[]?; .name == ("Cherry-Studio-" + $v + "-" + $a + ".AppImage") or .name == ("Cherry-Studio-" + $v + "-linux-" + (if $a == "x86_64" then "x64" else "arm64" end) + ".AppImage"))
+            ' <<< "$release_json" >/dev/null; then
+              echo "Error: missing upstream asset for architecture: $arch"
               exit 1
             fi
           done
@@ -57,13 +58,36 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Download AppImages for both architectures
-          curl -fL -o "cherry-studio-${{ inputs.pkgver }}-x86_64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ inputs.pkgver }}/Cherry-Studio-${{ inputs.pkgver }}-x86_64.AppImage"
-          curl -fL -o "cherry-studio-${{ inputs.pkgver }}-arm64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${{ inputs.pkgver }}/Cherry-Studio-${{ inputs.pkgver }}-arm64.AppImage"
+          version="${{ inputs.pkgver }}"
+
+          # Download AppImages for both architectures (try new naming first, fallback to legacy naming)
+          x86_arch="linux-x64"
+          if ! curl -fL -o "cherry-studio-${version}-x86_64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${version}/Cherry-Studio-${version}-${x86_arch}.AppImage"; then
+            x86_arch="x86_64"
+            curl -fL -o "cherry-studio-${version}-x86_64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${version}/Cherry-Studio-${version}-${x86_arch}.AppImage"
+          fi
+
+          arm_arch="linux-arm64"
+          if ! curl -fL -o "cherry-studio-${version}-arm64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${version}/Cherry-Studio-${version}-${arm_arch}.AppImage"; then
+            arm_arch="arm64"
+            curl -fL -o "cherry-studio-${version}-arm64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/v${version}/Cherry-Studio-${version}-${arm_arch}.AppImage"
+          fi
 
           # Calculate checksums
-          x86_checksum=$(sha256sum "cherry-studio-${{ inputs.pkgver }}-x86_64.AppImage" | awk '{print $1}')
-          arm64_checksum=$(sha256sum "cherry-studio-${{ inputs.pkgver }}-arm64.AppImage" | awk '{print $1}')
+          x86_checksum=$(sha256sum "cherry-studio-${version}-x86_64.AppImage" | awk '{print $1}')
+          arm64_checksum=$(sha256sum "cherry-studio-${version}-arm64.AppImage" | awk '{print $1}')
+
+          # Update architecture mappings in PKGBUILD
+          sed -i "/^# Determine architecture-specific values$/,/^esac/ {
+            /x86_64)/ {
+              n
+              s/_appimage_arch=.*/_appimage_arch='$x86_arch'/
+            }
+            /aarch64)/ {
+              n
+              s/_appimage_arch=.*/_appimage_arch='$arm_arch'/
+            }
+          }" PKGBUILD
 
           # Update architecture-specific checksums in PKGBUILD
           sed -i "/^# Architecture-specific SHA256 checksums$/,/^sha256sums=/ {
@@ -76,6 +100,9 @@ jobs:
               s/_sha256sum=.*/_sha256sum='$arm64_checksum'/
             }
           }" PKGBUILD
+
+          # Remove temporary downloaded AppImages
+          rm -f "cherry-studio-${version}-x86_64.AppImage" "cherry-studio-${version}-arm64.AppImage"
 
           # Generate .SRCINFO using makepkg
           makepkg --printsrcinfo > .SRCINFO

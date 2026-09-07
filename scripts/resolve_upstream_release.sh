@@ -42,8 +42,8 @@ version="$(
       | select(.draft == false and .prerelease == false)
       | .tag_name as $tag
       | ($tag | sub("^v"; "")) as $version
-      | select(any(.assets[]?; .name == ("Cherry-Studio-" + $version + "-x86_64.AppImage")))
-      | select(any(.assets[]?; .name == ("Cherry-Studio-" + $version + "-arm64.AppImage")))
+      | select(any(.assets[]?; .name == ("Cherry-Studio-" + $version + "-linux-x64.AppImage") or .name == ("Cherry-Studio-" + $version + "-x86_64.AppImage")))
+      | select(any(.assets[]?; .name == ("Cherry-Studio-" + $version + "-linux-arm64.AppImage") or .name == ("Cherry-Studio-" + $version + "-arm64.AppImage")))
       | $version
     ) // empty
   ' <<< "$releases_json"

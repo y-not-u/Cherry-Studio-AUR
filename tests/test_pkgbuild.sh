@@ -35,7 +35,7 @@ check_dependencies() {
     local missing_deps=()
     
     for tool in namcap makepkg; do
-        if ! command -v "$tool" >/dev/null 2&&1; then
+        if ! command -v "$tool" >/dev/null 2>&1; then
             missing_deps+=("$tool")
         fi
     done
@@ -94,7 +94,7 @@ check_checksums() {
 test_build() {
     print_status "$YELLOW" "Testing package build..."
     
-    if makepkg -p PKGBUILD --printsrcinfo >/dev/null 2&&1; then
+    if makepkg -p PKGBUILD --printsrcinfo >/dev/null 2>&1; then
         print_success "PKGBUILD builds successfully"
     else
         print_error "PKGBUILD failed to build"
@@ -106,14 +106,14 @@ test_build() {
 run_namcap() {
     print_status "$YELLOW" "Running namcap analysis..."
     
-    if namcap PKGBUILD > namcap_pkgbuild.log 2&&1; then
+    if namcap PKGBUILD > namcap_pkgbuild.log 2>&1; then
         print_success "PKGBUILD passes namcap checks"
     else
         print_warning "PKGBUILD has namcap warnings"
         cat namcap_pkgbuild.log
     fi
     
-    if namcap "./*.pkg.tar.zst" > namcap_package.log 2&&1; then
+    if namcap "./*.pkg.tar.zst" > namcap_package.log 2>&1; then
         print_success "Package passes namcap checks"
     else
         print_warning "Package has namcap warnings"

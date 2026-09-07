@@ -108,8 +108,9 @@ When a new version of Cherry Studio is released:
 
 2. Download new AppImages and calculate checksums:
    ```bash
-   curl -fL -o "cherry-studio-NEW_VERSION-x86_64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/vNEW_VERSION/Cherry-Studio-NEW_VERSION-x86_64.AppImage"
-   curl -fL -o "cherry-studio-NEW_VERSION-arm64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/vNEW_VERSION/Cherry-Studio-NEW_VERSION-arm64.AppImage"
+   # Upstream uses linux-x64 and linux-arm64 since v2.0.10 (prior versions used x86_64 and arm64)
+   curl -fL -o "cherry-studio-NEW_VERSION-x86_64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/vNEW_VERSION/Cherry-Studio-NEW_VERSION-linux-x64.AppImage"
+   curl -fL -o "cherry-studio-NEW_VERSION-arm64.AppImage" "https://github.com/cherryHQ/cherry-studio/releases/download/vNEW_VERSION/Cherry-Studio-NEW_VERSION-linux-arm64.AppImage"
    
    x86_checksum=$(sha256sum "cherry-studio-NEW_VERSION-x86_64.AppImage" | awk '{print $1}')
    arm64_checksum=$(sha256sum "cherry-studio-NEW_VERSION-arm64.AppImage" | awk '{print $1}')

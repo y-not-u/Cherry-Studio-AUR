@@ -114,13 +114,34 @@ jobs:
           su builduser -c "
             set -euo pipefail
 
-            # Download AppImages for both architectures
-            curl -fL -o \"cherry-studio-${VERSION}-x86_64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-x86_64.AppImage\"
-            curl -fL -o \"cherry-studio-${VERSION}-arm64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-arm64.AppImage\"
+            # Download AppImages for both architectures (try new naming first, fallback to legacy naming)
+            x86_arch="linux-x64"
+            if ! curl -fL -o \"cherry-studio-${VERSION}-x86_64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-\${x86_arch}.AppImage\"; then
+              x86_arch="x86_64"
+              curl -fL -o \"cherry-studio-${VERSION}-x86_64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-\${x86_arch}.AppImage\"
+            fi
+
+            arm_arch="linux-arm64"
+            if ! curl -fL -o \"cherry-studio-${VERSION}-arm64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-\${arm_arch}.AppImage\"; then
+              arm_arch="arm64"
+              curl -fL -o \"cherry-studio-${VERSION}-arm64.AppImage\" \"https://github.com/cherryHQ/cherry-studio/releases/download/v${VERSION}/Cherry-Studio-${VERSION}-\${arm_arch}.AppImage\"
+            fi
 
             # Compute checksums
             x86_checksum=\$(sha256sum \"cherry-studio-${VERSION}-x86_64.AppImage\" | awk '{print \$1}')
             arm64_checksum=\$(sha256sum \"cherry-studio-${VERSION}-arm64.AppImage\" | awk '{print \$1}')
+
+            # Update architecture mappings in PKGBUILD
+            sed -i \"/^# Determine architecture-specific values$/,/^esac/ {
+              /x86_64)/ {
+                n
+                s/_appimage_arch=.*/_appimage_arch='\$x86_arch'/
+              }
+              /aarch64)/ {
+                n
+                s/_appimage_arch=.*/_appimage_arch='\$arm_arch'/
+              }
+            }\" PKGBUILD
 
             # Update checksums in the checksum-specific case block. The first
             # case block in PKGBUILD selects the AppImage architecture, so do
@@ -142,6 +163,9 @@ jobs:
             actual_arm64_checksum=\$(sha256sum \"cherry-studio-${VERSION}-arm64.AppImage\" | awk '{print \$1}')
             test \"\$actual_x86_checksum\" = \"\$x86_checksum\"
             test \"\$actual_arm64_checksum\" = \"\$arm64_checksum\"
+
+            # Remove temporary downloaded AppImages
+            rm -f \"cherry-studio-${VERSION}-x86_64.AppImage\" \"cherry-studio-${VERSION}-arm64.AppImage\"
 
             # Generate .SRCINFO
             makepkg --printsrcinfo > .SRCINFO
